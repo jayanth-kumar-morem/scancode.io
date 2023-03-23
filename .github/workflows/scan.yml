@@ -3,7 +3,7 @@ name: Scan
 on: [push, pull_request]
 
 env:
-  PROJECT_NAME: "${{ GITHUB_REPOSITORY }}_${{ GITHUB_SHA }}"
+  PROJECT_NAME: "${GITHUB_REPOSITORY}_${GITHUB_SHA}"
 
 jobs:
   scan:
