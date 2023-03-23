@@ -41,7 +41,6 @@ jobs:
 
       - name: Create project and run the scan_codebase pipeline
         run: scanpipe create-project ${{ env.PROJECT_NAME }} 
-#          --input-url https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_REF}.zip
           --input-url https://github.com/package-url/packageurl-python/archive/refs/heads/main.zip
           --pipeline scan_codebase
           --execute
