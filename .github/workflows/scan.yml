@@ -1,0 +1,33 @@
+name: Scan
+
+on: [push, pull_request]
+
+env:
+  PROJECT_NAME: "${{ GITHUB_REPOSITORY }}_${{ GITHUB_SHA }}"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install ScanCode.io
+        run: pip install scancodeio
+
+      - name: debug
+        run: |
+          cwd
+          ls
+          echo "${{ env.PROJECT_NAME }}"
+          echo ${{ env.PROJECT_NAME }}
+
+      - name: Scan
+        run: scanpipe create-project ${{ env.PROJECT_NAME }}
+
+      - name: Generate outputs in various formats
+        run: |
+          scanpipe output --project ${{ env.PROJECT_NAME }} --format json
+          scanpipe output --project ${{ env.PROJECT_NAME }} --format spdx
+          scanpipe output --project ${{ env.PROJECT_NAME }} --format cyclonedx
+          scanpipe output --project ${{ env.PROJECT_NAME }} --format xlsx
