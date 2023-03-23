@@ -41,7 +41,8 @@ jobs:
 
       - name: Create project and run the scan_codebase pipeline
         run: scanpipe create-project ${{ env.PROJECT_NAME }} 
-          --input-url https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_REF}.zip
+#          --input-url https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_REF}.zip
+          --input-url https://github.com/package-url/packageurl-python/archive/refs/heads/main.zip
           --pipeline scan_codebase
           --execute
 
@@ -56,4 +57,10 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: scan-outputs
-          path: ${GITHUB_WORKSPACE}/var/projects/**/output/
+          path: ${GITHUB_WORKSPACE}/var/projects/**/output/*
+
+      - name: Upload outputs
+        uses: actions/upload-artifact@v3
+        with:
+          name: scan-outputs
+          path: /home/runner/work/scancode.io/scancode.io/**/output/
