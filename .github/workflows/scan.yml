@@ -40,6 +40,9 @@ jobs:
       - name: Install ScanCode.io
         run: pip install scancodeio
 
+      - name: Migrate DB
+        run: scanpipe migrate
+
       - name: Scan
         run: scanpipe create-project ${{ env.PROJECT_NAME }}
 
