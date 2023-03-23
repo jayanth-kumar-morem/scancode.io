@@ -34,9 +34,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: debug
-        run: "ls -al ${GITHUB_PATH}"
-
       - name: Install ScanCode.io
         run: pip install scancodeio
 
@@ -44,7 +41,10 @@ jobs:
         run: scanpipe migrate
 
       - name: Scan
-        run: scanpipe create-project ${{ env.PROJECT_NAME }}
+        run: scanpipe create-project ${{ env.PROJECT_NAME }} 
+          --input-url https://github.com/package-url/packageurl-python/archive/refs/heads/main.zip
+          --pipeline scan_codebase
+          --execute
 
       - name: Generate outputs in various formats
         run: |
