@@ -53,14 +53,14 @@ jobs:
           scanpipe output --project ${{ env.PROJECT_NAME }} --format cyclonedx
           scanpipe output --project ${{ env.PROJECT_NAME }} --format xlsx
 
-      - name: Upload outputs
+      - name: Upload outputs 1
         uses: actions/upload-artifact@v3
         with:
-          name: scan-outputs
+          name: scan-outputs1
           path: ${GITHUB_WORKSPACE}/var/projects/**/output/*
 
-      - name: Upload outputs
+      - name: Upload outputs 2
         uses: actions/upload-artifact@v3
         with:
-          name: scan-outputs
+          name: scan-outputs2
           path: /home/runner/work/scancode.io/scancode.io/**/output/
