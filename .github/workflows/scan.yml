@@ -41,7 +41,7 @@ jobs:
 
       - name: Create project and run the scan_codebase pipeline
         run: scanpipe create-project ${{ env.PROJECT_NAME }} 
-          --input-url https://github.com/package-url/packageurl-python/archive/refs/heads/main.zip
+          --input-url https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_REF}.zip
           --pipeline scan_codebase
           --execute
 
@@ -52,14 +52,9 @@ jobs:
           scanpipe output --project ${{ env.PROJECT_NAME }} --format cyclonedx
           scanpipe output --project ${{ env.PROJECT_NAME }} --format xlsx
 
-      - name: Upload outputs 1
+      # TODO: No files were found with the provided path: ${GITHUB_WORKSPACE}/var/projects/**/output/*.
+      - name: Upload outputs
         uses: actions/upload-artifact@v3
         with:
-          name: scan-outputs1
-          path: ${GITHUB_WORKSPACE}/var/projects/**/output/*
-
-      - name: Upload outputs 2
-        uses: actions/upload-artifact@v3
-        with:
-          name: scan-outputs2
-          path: /home/runner/work/scancode.io/scancode.io/**/output/
+          name: scan-outputs
+          path: /home/runner/work/scancode.io/scancode.io/**/output/*
