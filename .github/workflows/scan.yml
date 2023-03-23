@@ -52,3 +52,8 @@ jobs:
           scanpipe output --project ${{ env.PROJECT_NAME }} --format spdx
           scanpipe output --project ${{ env.PROJECT_NAME }} --format cyclonedx
           scanpipe output --project ${{ env.PROJECT_NAME }} --format xlsx
+
+      - name: Upload outputs
+      - uses: actions/upload-artifact@v3
+        with:
+          path: /home/runner/work/scancode.io/scancode.io/var/projects/**/output/*
