@@ -3,8 +3,8 @@ name: Scan
 on: [push, pull_request]
 
 env:
-  PROJECT_NAME: "${GITHUB_REPOSITORY}_${GITHUB_SHA}"
-  SECRET_KEY: "abcd"
+  PROJECT_NAME: ${GITHUB_REPOSITORY}_${GITHUB_SHA}
+  SECRET_KEY: abcdef
   POSTGRES_DB: scancodeio
   POSTGRES_USER: scancodeio
   POSTGRES_PASSWORD: scancodeio
@@ -31,18 +31,17 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+#      - name: Checkout repository
+#        uses: actions/checkout@v3
 
-      - name: Install ScanCode.io
-        run: pip install scancodeio
+      - name: Install and setup ScanCode.io
+        run: |
+          pip install scancodeio
+          scanpipe migrate
 
-      - name: Migrate DB
-        run: scanpipe migrate
-
-      - name: Scan
+      - name: Create project and run the scan_codebase pipeline
         run: scanpipe create-project ${{ env.PROJECT_NAME }} 
-          --input-url https://github.com/${GITHUB_REPOSITORY)/archive/${GITHUB_REF}.zip
+          --input-url https://github.com/${GITHUB_REPOSITORY}/archive/${GITHUB_REF}.zip
           --pipeline scan_codebase
           --execute
 
