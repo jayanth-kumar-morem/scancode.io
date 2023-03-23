@@ -5,16 +5,37 @@ on: [push, pull_request]
 env:
   PROJECT_NAME: "${GITHUB_REPOSITORY}_${GITHUB_SHA}"
   SECRET_KEY: "abcd"
+  POSTGRES_DB: scancodeio
+  POSTGRES_USER: scancodeio
+  POSTGRES_PASSWORD: scancodeio
+  POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8
 
 jobs:
   scan:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_INITDB_ARGS: ${{ env.POSTGRES_INITDB_ARGS }}
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: debug
-        run: "echo ${GITHUB_PATH}"
+        run: "ls -al ${GITHUB_PATH}"
 
       - name: Install ScanCode.io
         run: pip install scancodeio
