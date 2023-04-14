@@ -20,27 +20,32 @@
 # ScanCode.io is a free software code scanning tool from nexB Inc. and others.
 # Visit https://github.com/nexB/scancode.io for support and download.
 
-from scanpipe.pipelines import Pipeline
+import json
+from pathlib import Path
+
+from django.test import TestCase
+
+from scanpipe.pipes import input
 
 
-class DoNothing(Pipeline):
-    """
-    Do nothing, in 2 steps.
+class ScanPipeInputPipesTest(TestCase):
+    data_location = Path(__file__).parent.parent / "data"
 
-    Description section of the doc string.
-    """
+    def test_scanpipe_pipes_input_get_tool_name_from_scan_headers(self):
+        tool_name = input.get_tool_name_from_scan_headers(scan_data={})
+        self.assertIsNone(tool_name)
 
-    @classmethod
-    def steps(cls):
-        return (
-            cls.step1,
-            cls.step2,
+        tool_name = input.get_tool_name_from_scan_headers(scan_data={"headers": []})
+        self.assertIsNone(tool_name)
+
+        input_location = self.data_location / "asgiref-3.3.0_scanpipe_output.json"
+        tool_name = input.get_tool_name_from_scan_headers(
+            scan_data=json.loads(input_location.read_text())
         )
+        self.assertEqual("scanpipe", tool_name)
 
-    def step1(self):
-        """Step1 doc."""
-        pass
-
-    def step2(self):
-        """Step2 doc."""
-        pass
+        input_location = self.data_location / "asgiref-3.3.0_toolkit_scan.json"
+        tool_name = input.get_tool_name_from_scan_headers(
+            scan_data=json.loads(input_location.read_text())
+        )
+        self.assertEqual("scancode-toolkit", tool_name)

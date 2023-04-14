@@ -4,6 +4,30 @@ Changelog
 v33.0.0 (unreleased)
 --------------------
 
+- Add new command line option to create-project and add-input management commands to
+  copy the content of a local source directory to the project codebase work directory.
+  https://github.com/nexB/scancode.io/pull/672
+
+- Enhance the ``output`` management command to support providing multiple formats at
+  once.
+  https://github.com/nexB/scancode.io/issues/646
+
+- Add support for manifest types using ScanCode-toolkit handlers.
+  https://github.com/nexB/scancode.io/issues/658
+
+- Add a "layers" data sheet in the xlsx output for docker pipeline run.
+  https://github.com/nexB/scancode.io/issues/578
+
+- Move the ``cyclonedx`` and ``spdx`` root modules into the ``pipes`` module.
+  https://github.com/nexB/scancode.io/issues/657
+
+- Remove the admin app and views.
+  https://github.com/nexB/scancode.io/issues/645
+
+- Enhance the ``resolve_about_packages`` pipe to handle filename and checksum values.
+
+- Split the pipes unit tests into their own related submodule.
+
 v32.1.0 (2023-03-23)
 --------------------
 

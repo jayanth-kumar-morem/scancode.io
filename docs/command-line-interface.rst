@@ -65,7 +65,8 @@ For example::
 
     $ scanpipe create-project --help
     usage: scanpipe create-project [--input-file INPUTS_FILES]
-        [--input-url INPUT_URLS] [--pipeline PIPELINES] [--execute] [--async]
+        [--input-url INPUT_URLS] [--copy-codebase SOURCE_DIRECTORY]
+        [--pipeline PIPELINES] [--execute] [--async]
         name
 
     Create a ScanPipe project.
@@ -89,6 +90,9 @@ Optional arguments:
 
 - ``--input-url INPUT_URLS`` Input URLs to download in the :guilabel:`input/` work
   directory.
+
+- ``--copy-codebase SOURCE_DIRECTORY`` Copy the content of the provided source directory
+  into the :guilabel:`codebase/` work directory.
 
 - ``--execute`` Execute the pipelines right after project creation.
 
@@ -127,6 +131,9 @@ Adds input files in the project's work directory.
 
 - ``--input-url INPUT_URLS`` Input URLs to download in the :guilabel:`input/` work
   directory.
+
+- ``--copy-codebase SOURCE_DIRECTORY`` Copy the content of the provided source directory
+  into the :guilabel:`codebase/` work directory.
 
 For example, assuming you have created beforehand a project named "foo", this will
 copy ``~/docker/alpine-base.tar`` to the foo project :guilabel:`input/` directory::
@@ -195,12 +202,21 @@ Displays status information about the ``PROJECT`` project.
     This can be disabled providing the ``--verbosity 0`` option.
 
 
-`$ scanpipe output --project PROJECT --format {json,csv,xlsx}`
---------------------------------------------------------------
+`$ scanpipe output --project PROJECT --format {json,csv,xlsx,spdx,cyclonedx}`
+-----------------------------------------------------------------------------
 
-Outputs the ``PROJECT`` results as JSON, CSV or XLSX.
+Outputs the ``PROJECT`` results as JSON, XLSX, CSV, SPDX, and CycloneDX.
 The output files are created in the ``PROJECT`` :guilabel:`output/` directory.
 
+Multiple formats can be provided at once::
+
+    $ scanpipe output --project foo --format json xlsx spdx cyclonedx
+
+Optional arguments:
+
+- ``--print`` Print the output to stdout instead of creating a file. This is not
+  compatible with the XLSX and CSV formats.
+  It cannot be used when multiple formats are provided.
 
 `$ scanpipe graph [PIPELINE_NAME ...]`
 --------------------------------------

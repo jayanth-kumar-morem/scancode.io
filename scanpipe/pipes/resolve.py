@@ -32,14 +32,32 @@ from packagedcode import APPLICATION_PACKAGE_DATAFILE_HANDLERS
 from packagedcode.licensing import get_normalized_expression
 from packageurl import PackageURL
 from python_inspector.resolve_cli import resolver_api
+from scancode.api import get_package_data
 
-from scanpipe import cyclonedx
-from scanpipe import spdx
 from scanpipe.models import DiscoveredPackage
+from scanpipe.pipes import cyclonedx
+from scanpipe.pipes import spdx
 
 """
-Utilities to resolve packages from manifest, lockfile, and SBOM.
+Resolve packages from manifest, lockfile, and SBOM.
 """
+
+
+def resolve_packages(input_location):
+    """Resolve the packages from manifest file."""
+    default_package_type = get_default_package_type(input_location)
+    if not default_package_type:
+        raise Exception(f"No package type found for {input_location}")
+
+    # The ScanCode.io resolvers take precedence over the ScanCode-toolkit ones.
+    resolver = resolver_registry.get(default_package_type)
+    if resolver:
+        resolved_packages = resolver(input_location=input_location)
+    else:
+        package_data = get_package_data(location=input_location)
+        resolved_packages = package_data.get("package_data", [])
+
+    return resolved_packages
 
 
 def resolve_pypi_packages(input_location):
@@ -61,14 +79,22 @@ def resolve_about_packages(input_location):
     """Resolve the packages from the `input_location` .ABOUT file."""
     about = About(location=input_location)
     about_data = about.as_dict()
+    package_data = about_data.copy()
 
     if package_url := about_data.get("package_url"):
         package_url_data = PackageURL.from_string(package_url).to_dict(encode=True)
         for field_name, value in package_url_data.items():
             if value:
-                about_data[field_name] = value
+                package_data[field_name] = value
 
-    package_data = DiscoveredPackage.clean_data(about_data)
+    if about_resource := about_data.get("about_resource"):
+        package_data["filename"] = list(about_resource.keys())[0]
+
+    for field_name, value in about_data.items():
+        if field_name.startswith("checksum_"):
+            package_data[field_name.replace("checksum_", "")] = value
+
+    package_data = DiscoveredPackage.clean_data(package_data)
     return [package_data]
 
 
@@ -177,11 +203,15 @@ def get_default_package_type(input_location):
     Return the package type associated with the provided `input_location`.
     This type is used to get the related handler that knows how process the input.
     """
+    input_location = str(input_location)
+
     for handler in APPLICATION_PACKAGE_DATAFILE_HANDLERS:
         if handler.is_datafile(input_location):
             return handler.default_package_type
+
         if input_location.endswith((".spdx", ".spdx.json")):
             return "spdx"
+
         if input_location.endswith((".bom.json", ".cdx.json")):
             return "cyclonedx"
 

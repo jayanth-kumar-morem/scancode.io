@@ -44,6 +44,7 @@ from scanpipe.pipes import output
 from scanpipe.tests import FIXTURES_REGEN
 from scanpipe.tests import package_data1
 from scanpipe.tests.pipelines.do_nothing import DoNothing
+from scanpipe.tests.pipelines.profile_step import ProfileStep
 from scanpipe.tests.pipelines.steps_as_attribute import StepsAsAttribute
 
 from_docker_image = os.environ.get("FROM_DOCKER_IMAGE")
@@ -58,13 +59,30 @@ class ScanPipePipelinesTest(TestCase):
 
     def test_scanpipe_pipelines_class_get_info(self):
         expected = {
-            "description": "A pipeline that does nothing, in 2 steps.",
+            "description": "Description section of the doc string.",
+            "summary": "Do nothing, in 2 steps.",
             "steps": [
                 {"name": "step1", "doc": "Step1 doc."},
                 {"name": "step2", "doc": "Step2 doc."},
             ],
         }
         self.assertEqual(expected, DoNothing.get_info())
+
+        expected = {
+            "summary": "Profile a step using the @profile decorator.",
+            "description": "",
+            "steps": [
+                {"name": "step", "doc": ""},
+            ],
+        }
+        self.assertEqual(expected, ProfileStep.get_info())
+
+    def test_scanpipe_pipelines_class_get_summary(self):
+        expected = "Do nothing, in 2 steps."
+        self.assertEqual(expected, DoNothing.get_summary())
+
+        expected = "Profile a step using the @profile decorator."
+        self.assertEqual(expected, ProfileStep.get_summary())
 
     def test_scanpipe_pipeline_class_log(self):
         project1 = Project.objects.create(name="Analysis")
@@ -172,7 +190,7 @@ class ScanPipePipelinesTest(TestCase):
         expected = (StepsAsAttribute.step1,)
         with warnings.catch_warnings(record=True) as caught_warnings:
             self.assertEqual(expected, StepsAsAttribute.get_steps())
-            self.assertEquals(len(caught_warnings), 1)
+            self.assertEqual(len(caught_warnings), 1)
             caught_warning = caught_warnings[0]
 
         expected = (
@@ -684,7 +702,9 @@ class PipelinesIntegrationTest(TestCase):
         pipeline_name = "inspect_manifest"
         project1 = Project.objects.create(name="Analysis")
 
-        input_location = self.data_location / "Django-4.0.8-py3-none-any.whl.ABOUT"
+        input_location = (
+            self.data_location / "manifests" / "Django-4.0.8-py3-none-any.whl.ABOUT"
+        )
         project1.copy_input_from(input_location)
 
         run = project1.add_pipeline(pipeline_name)
@@ -704,7 +724,7 @@ class PipelinesIntegrationTest(TestCase):
         pipeline_name = "inspect_manifest"
         project1 = Project.objects.create(name="Analysis")
 
-        input_location = self.data_location / "toml.spdx.json"
+        input_location = self.data_location / "manifests" / "toml.spdx.json"
         project1.copy_input_from(input_location)
 
         run = project1.add_pipeline(pipeline_name)
