@@ -46,11 +46,7 @@ jobs:
           --execute
 
       - name: Generate outputs in various formats
-        run: |
-          scanpipe output --project ${{ env.PROJECT_NAME }} --format json
-          scanpipe output --project ${{ env.PROJECT_NAME }} --format spdx
-          scanpipe output --project ${{ env.PROJECT_NAME }} --format cyclonedx
-          scanpipe output --project ${{ env.PROJECT_NAME }} --format xlsx
+        run: scanpipe output --project ${{ env.PROJECT_NAME }} --format json xlsx spdx cyclonedx
 
       # TODO: No files were found with the provided path: ${GITHUB_WORKSPACE}/var/projects/**/output/*.
       - name: Upload outputs
