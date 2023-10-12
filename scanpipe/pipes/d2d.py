@@ -520,14 +520,13 @@ def match_purldb_package(
                     "sha1": sha1,
                 }
                 project.add_warning(
-                    description=(
-                        "Could not create package from empty purldb data"
-                    ),
+                    description=("Could not create package from empty purldb data"),
                     model="match_purldb_package",
                     details=error_details,
                 )
-            if matched_resources_count:
-                match_count += matched_resources_count
+                continue
+
+            match_count += matched_resources_count
     return match_count
 
 
@@ -575,14 +574,13 @@ def match_purldb_resource(
                     "sha1": sha1,
                 }
                 project.add_warning(
-                    description=(
-                        "Could not create package from empty purldb data"
-                    ),
+                    description=("Could not create package from empty purldb data"),
                     model="match_purldb_resource",
                     details=error_details,
                 )
-            if matched_resources_count:
-                match_count += matched_resources_count
+                continue
+
+            match_count += matched_resources_count
     return match_count
 
 
@@ -603,10 +601,8 @@ def match_purldb_directory(project, resource):
                     "fingerprint": fingerprint,
                 }
                 project.add_warning(
-                    description=(
-                        "Could not create package from empty purldb data"
-                    ),
-                    model="create_package_from_purldb_data",
+                    description=("Could not create package from empty purldb data"),
+                    model="match_purldb_directory",
                     details=error_details,
                 )
             return package
