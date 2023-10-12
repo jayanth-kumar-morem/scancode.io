@@ -456,6 +456,9 @@ def create_package_from_purldb_data(project, resources, package_data, status):
     Return a tuple, containing the created DiscoveredPackage and the number of
     CodebaseResources matched to PurlDB that are part of that DiscoveredPackage.
     """
+    if not package_data:
+        return None, None
+
     package_data = package_data.copy()
     # Do not re-use uuid from PurlDB as DiscoveredPackage.uuid is unique and a
     # PurlDB match can be found in different projects.
@@ -505,13 +508,26 @@ def match_purldb_package(
             resources = resources_by_sha1.get(sha1) or []
             if not resources:
                 continue
-            _, matched_resources_count = create_package_from_purldb_data(
+            _package, matched_resources_count = create_package_from_purldb_data(
                 project=project,
                 resources=resources,
                 package_data=package_data,
                 status=flag.MATCHED_TO_PURLDB_PACKAGE,
             )
-            match_count += matched_resources_count
+            if not _package:
+                error_details = {
+                    "resources": resources,
+                    "sha1": sha1,
+                }
+                project.add_warning(
+                    description=(
+                        "Could not create package from empty purldb data"
+                    ),
+                    model="match_purldb_package",
+                    details=error_details,
+                )
+            if matched_resources_count:
+                match_count += matched_resources_count
     return match_count
 
 
@@ -547,13 +563,26 @@ def match_purldb_resource(
             resources = resources_by_sha1.get(sha1) or []
             if not resources:
                 continue
-            _, matched_resources_count = create_package_from_purldb_data(
+            _package, matched_resources_count = create_package_from_purldb_data(
                 project=project,
                 resources=resources,
                 package_data=package_data,
                 status=flag.MATCHED_TO_PURLDB_RESOURCE,
             )
-            match_count += matched_resources_count
+            if not _package:
+                error_details = {
+                    "resources": resources,
+                    "sha1": sha1,
+                }
+                project.add_warning(
+                    description=(
+                        "Could not create package from empty purldb data"
+                    ),
+                    model="match_purldb_resource",
+                    details=error_details,
+                )
+            if matched_resources_count:
+                match_count += matched_resources_count
     return match_count
 
 
@@ -564,9 +593,23 @@ def match_purldb_directory(project, resource):
     if results := purldb.match_directory(fingerprint=fingerprint):
         package_url = results[0]["package"]
         if package_data := purldb.request_get(url=package_url):
-            return create_package_from_purldb_data(
+            package, _ = create_package_from_purldb_data(
                 project, [resource], package_data, flag.MATCHED_TO_PURLDB_DIRECTORY
             )
+            if not package:
+                error_details = {
+                    "resource": resource,
+                    "package_url": package_url,
+                    "fingerprint": fingerprint,
+                }
+                project.add_warning(
+                    description=(
+                        "Could not create package from empty purldb data"
+                    ),
+                    model="create_package_from_purldb_data",
+                    details=error_details,
+                )
+            return package
 
 
 def match_sha1s_to_purldb(
