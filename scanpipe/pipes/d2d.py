@@ -804,6 +804,8 @@ def _map_about_file_resource(project, about_file_resource, to_resources):
     if extra_data := package_data.get("extra_data"):
         ignored_resources = extra_data.get("ignored_resources")
 
+    error_message_details["about_resource"] = filename
+
     # Fetch all resources that are covered by the .ABOUT file.
     codebase_resources = to_resources.filter(path__contains=f"/{filename.lstrip('/')}")
     if not codebase_resources:
