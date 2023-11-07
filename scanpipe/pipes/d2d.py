@@ -23,6 +23,7 @@
 from collections import Counter
 from collections import defaultdict
 from contextlib import suppress
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 from django.contrib.postgres.aggregates.general import ArrayAgg
@@ -774,76 +775,15 @@ def _map_javascript_resource(
             resource.update(status=flag.MAPPED)
 
 
-def _map_about_file_resource(project, about_file_resource, to_resources):
-    about_file_location = str(about_file_resource.location_path)
-    package_data = resolve.resolve_about_package(about_file_location)
-
-    error_message_details = {
-        "path": about_file_resource.path,
-        "package_data": package_data,
-    }
-    if not package_data:
-        project.add_error(
-            description="Cannot create package from ABOUT file",
-            model="map_about_files",
-            details=error_message_details,
-        )
-        return
-
-    files_pattern = package_data.get("filename")
-    if not files_pattern:
-        # Cannot map anything without the about_resource value.
-        project.add_error(
-            description="ABOUT file does not have about_resource",
-            model="map_about_files",
-            details=error_message_details,
-        )
-        return
-
-    ignored_resource_patterns = []
-    codebase_resources = to_resources.path_pattern(pattern=files_pattern)
-    if extra_data := package_data.get("extra_data"):
-        ignored_resource_patterns = extra_data.get("ignored_resources")
-
-    # Fetch all resources that are covered by the .ABOUT file.
-    if not codebase_resources:
-        # If there's nothing to map on the ``to/`` do not create the package.
-        project.add_warning(
-            description=(
-                "Resource paths listed at about_resource is not found"
-                " in the to/ codebase"
-            ),
-            model="map_about_files",
-            details=error_message_details,
-        )
-        return
-
-    # Ignore resources for paths in `ignored_resources` attribute
-    if ignored_resource_patterns:
-        codebase_resources = codebase_resources.path_patterns(
-            patterns=ignored_resource_patterns
-        )
-
-    # Create the Package using .ABOUT data and assigned related codebase_resources
-    pipes.update_or_create_package(project, package_data, codebase_resources)
-
-    # Map the .ABOUT file resource to all related resources in the ``to/`` side.
-    for to_resource in codebase_resources:
-        pipes.make_relation(
-            from_resource=about_file_resource,
-            to_resource=to_resource,
-            map_type="about_file",
-        )
-
-    codebase_resources.update(status=flag.ABOUT_MAPPED)
-    about_file_resource.update(status=flag.ABOUT_MAPPED)
-
-
 def map_about_files(project, logger=None):
     """Map ``from/`` .ABOUT files to their related ``to/`` resources."""
     project_resources = project.codebaseresources
-    from_files = project_resources.files().from_codebase()
-    from_about_files = from_files.filter(extension=".ABOUT")
+    from_about_files = (
+        project_resources.files().from_codebase().filter(extension=".ABOUT")
+    )
+    if not from_about_files.exists():
+        return
+
     to_resources = project_resources.to_codebase()
 
     if logger:
@@ -852,9 +792,95 @@ def map_about_files(project, logger=None):
             f"codebase."
         )
 
-    for about_file_resource in from_about_files:
-        _map_about_file_resource(project, about_file_resource, to_resources)
+    path_patterns = []
+    ignore_path_patterns = []
+    about_resources_by_path = {}
+    about_pkgdata_by_path = {}
+    mapped_resources_by_aboutpath = {}
 
+    for about_file_resource in from_about_files:
+        package_data = resolve.resolve_about_package(
+            input_location=str(about_file_resource.location_path)
+        )
+        error_message_details = {
+            "path": about_file_resource.path,
+            "package_data": package_data,
+        }
+        if not package_data:
+            project.add_error(
+                description="Cannot create package from ABOUT file",
+                model="map_about_files",
+                details=error_message_details,
+            )
+            continue
+
+        about_pkgdata_by_path[about_file_resource.path] = package_data
+        files_pattern = package_data.get("filename")
+        if not files_pattern:
+            # Cannot map anything without the about_resource value.
+            project.add_error(
+                description="ABOUT file does not have about_resource",
+                model="map_about_files",
+                details=error_message_details,
+            )
+            continue
+        else:
+            path_patterns.append(files_pattern)
+
+        if extra_data := package_data.get("extra_data"):
+            ignore_path_patterns.extend(extra_data.get("ignored_resources"))
+
+        about_resources_by_path[about_file_resource.path] = about_file_resource
+        mapped_resources_by_aboutpath[about_file_resource.path] = []
+
+    about_mapped_resources = to_resources.path_patterns(
+        patterns=path_patterns
+    ).path_patterns(patterns=ignore_path_patterns, ignore=True)
+    about_mapped_resources.update(status=flag.ABOUT_MAPPED)
+
+    for about_mapped_resource in about_mapped_resources:
+        for about_file_resource in about_resources_by_path.values():
+            package_data = about_pkgdata_by_path[about_file_resource.path]
+            if fnmatchcase(
+                name=about_mapped_resource.path, pat=package_data.get("filename")
+            ):
+                mapped_resources_by_aboutpath[about_file_resource.path].append(
+                    about_mapped_resource
+                )
+
+    for about_path, mapped_resources in mapped_resources_by_aboutpath.items():
+        about_file_resource = about_resources_by_path[about_path]
+        package_data = about_pkgdata_by_path[about_file_resource.path]
+
+        if not mapped_resources:
+            error_message_details = {
+                "path": about_file_resource.path,
+                "package_data": package_data,
+            }
+            project.add_warning(
+                description=(
+                    "Resource paths listed at about_resource is not found"
+                    " in the to/ codebase"
+                ),
+                model="map_about_files",
+                details=error_message_details,
+            )
+            continue
+
+        # Create the Package using .ABOUT data and assigned related codebase_resources
+        pipes.update_or_create_package(project, package_data, mapped_resources)
+
+        # Map the .ABOUT file resource to all related resources in the ``to/`` side.
+        for mapped_resource in mapped_resources:
+            pipes.make_relation(
+                from_resource=about_file_resource,
+                to_resource=mapped_resource,
+                map_type="about_file",
+            )
+
+        about_file_resource.update(status=flag.ABOUT_MAPPED)
+
+    for about_file_resource in about_resources_by_path.values():
         about_file_companions = (
             about_file_resource.siblings()
             .filter(name__startswith=about_file_resource.name_without_extension)
